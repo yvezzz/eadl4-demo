@@ -139,13 +139,3 @@ eadl4-pipeline/
 ```
 
 ---
-
-## Pour commencer
-
-1. **Push le projet sur GitHub** (repo `eadl4-demo` sur ton compte yvezzz)
-2. **Configure les secrets** dans Settings → Secrets and variables → Actions :
-   - `SONAR_TOKEN` (depuis https://sonarcloud.io)
-   - `SSH_PRIVATE_KEY` (clé SSH pour les serveurs de déploiement)
-3. **Active SonarCloud** sur le repo
-4. **Protège les branches** `main` et `develop` (Settings → Branches → Add rule)
-5. **Configure les environnements** `staging` et `production` (Settings → Environments)
