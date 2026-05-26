@@ -2,75 +2,72 @@ package com.example.demo;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.web.servlet.MockMvc;
-import java.util.List;
-import java.util.Optional;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@WebMvcTest(UserController.class)
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@AutoConfigureMockMvc
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 class UserControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
 
-    @MockitoBean
-    private UserService service;
-
     @Test
-    void getAll_shouldReturnList() throws Exception {
-        when(service.findAll()).thenReturn(List.of(new User(1L, "Alice", "alice@test.com")));
+    void getAll_shouldReturnEmptyList() throws Exception {
         mockMvc.perform(get("/api/users"))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$[0].name").value("Alice"));
+            .andExpect(jsonPath("$.length()").value(0));
     }
 
     @Test
-    void getById_shouldReturnUser_whenFound() throws Exception {
-        when(service.findById(1L)).thenReturn(Optional.of(new User(1L, "Bob", "bob@test.com")));
-        mockMvc.perform(get("/api/users/1"))
-            .andExpect(status().isOk())
-            .andExpect(jsonPath("$.name").value("Bob"));
-    }
-
-    @Test
-    void getById_shouldReturn404_whenNotFound() throws Exception {
-        when(service.findById(99L)).thenReturn(Optional.empty());
-        mockMvc.perform(get("/api/users/99")).andExpect(status().isNotFound());
-    }
-
-    @Test
-    void create_shouldReturn201() throws Exception {
-        when(service.create("Alice", "alice@test.com")).thenReturn(new User(1L, "Alice", "alice@test.com"));
+    void createAndGet_shouldWork() throws Exception {
         mockMvc.perform(post("/api/users")
             .contentType("application/json")
             .content("{\"name\":\"Alice\",\"email\":\"alice@test.com\"}"))
             .andExpect(status().isCreated())
             .andExpect(jsonPath("$.name").value("Alice"));
+
+        mockMvc.perform(get("/api/users/1"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.name").value("Alice"));
     }
 
     @Test
-    void update_shouldReturn200_whenFound() throws Exception {
-        when(service.update(1L, "Alice", "a@b.com")).thenReturn(Optional.of(new User(1L, "Alice", "a@b.com")));
+    void getById_shouldReturn404_whenNotFound() throws Exception {
+        mockMvc.perform(get("/api/users/99")).andExpect(status().isNotFound());
+    }
+
+    @Test
+    void update_shouldWork() throws Exception {
+        mockMvc.perform(post("/api/users")
+            .contentType("application/json")
+            .content("{\"name\":\"Alice\",\"email\":\"alice@test.com\"}"))
+            .andExpect(status().isCreated());
+
         mockMvc.perform(put("/api/users/1")
             .contentType("application/json")
-            .content("{\"name\":\"Alice\",\"email\":\"a@b.com\"}"))
-            .andExpect(status().isOk());
+            .content("{\"name\":\"Bob\",\"email\":\"bob@test.com\"}"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.name").value("Bob"));
     }
 
     @Test
     void delete_shouldReturn204_whenFound() throws Exception {
-        when(service.delete(1L)).thenReturn(true);
+        mockMvc.perform(post("/api/users")
+            .contentType("application/json")
+            .content("{\"name\":\"Alice\",\"email\":\"a@b.com\"}"))
+            .andExpect(status().isCreated());
+
         mockMvc.perform(delete("/api/users/1")).andExpect(status().isNoContent());
     }
 
     @Test
     void delete_shouldReturn404_whenNotFound() throws Exception {
-        when(service.delete(99L)).thenReturn(false);
         mockMvc.perform(delete("/api/users/99")).andExpect(status().isNotFound());
     }
 }

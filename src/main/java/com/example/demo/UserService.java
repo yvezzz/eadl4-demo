@@ -26,12 +26,12 @@ public class UserService {
     }
 
     public Optional<User> update(Long id, String name, String email) {
-        var opt = findById(id);
-        opt.ifPresent(u -> {
+        return findById(id).map(u -> {
             users.remove(u);
-            users.add(new User(id, name, email));
+            User updated = new User(id, name, email);
+            users.add(updated);
+            return updated;
         });
-        return opt;
     }
 
     public boolean delete(Long id) {
