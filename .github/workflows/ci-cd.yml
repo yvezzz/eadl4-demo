@@ -102,7 +102,14 @@ jobs:
       name: staging
       url: https://staging.app.internal
     steps:
+      - name: Check SSH key
+        id: check-ssh
+        env:
+          SSH_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+        run: |
+          if [ -n "$SSH_KEY" ]; then echo "available=true" >> "$GITHUB_OUTPUT"; else echo "available=false" >> "$GITHUB_OUTPUT"; fi
       - name: Deploy to staging
+        if: steps.check-ssh.outputs.available == 'true'
         uses: appleboy/ssh-action@v1
         with:
           host: staging.internal
@@ -114,6 +121,9 @@ jobs:
             docker rm eadl4-app || true
             docker run -d --name eadl4-app -p 80:8080 \
               ${{ env.REGISTRY }}/${{ github.repository }}:${{ github.sha }}
+      - name: Skip notice
+        if: steps.check-ssh.outputs.available == 'false'
+        run: echo "SSH_PRIVATE_KEY not set — deployment skipped"
 
   deploy-prod:
     runs-on: ubuntu-latest
@@ -123,7 +133,14 @@ jobs:
       name: production
       url: https://app.internal
     steps:
+      - name: Check SSH key
+        id: check-ssh
+        env:
+          SSH_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+        run: |
+          if [ -n "$SSH_KEY" ]; then echo "available=true" >> "$GITHUB_OUTPUT"; else echo "available=false" >> "$GITHUB_OUTPUT"; fi
       - name: Deploy to web1
+        if: steps.check-ssh.outputs.available == 'true'
         uses: appleboy/ssh-action@v1
         with:
           host: web1.internal
@@ -135,6 +152,22 @@ jobs:
             docker rm eadl4-app || true
             docker run -d --name eadl4-app -p 80:8080 \
               ${{ env.REGISTRY }}/${{ github.repository }}:${{ github.sha }}
+      - name: Deploy to web2
+        if: steps.check-ssh.outputs.available == 'true'
+        uses: appleboy/ssh-action@v1
+        with:
+          host: web2.internal
+          username: deploy
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            docker pull ${{ env.REGISTRY }}/${{ github.repository }}:${{ github.sha }}
+            docker stop eadl4-app || true
+            docker rm eadl4-app || true
+            docker run -d --name eadl4-app -p 80:8080 \
+              ${{ env.REGISTRY }}/${{ github.repository }}:${{ github.sha }}
+      - name: Skip notice
+        if: steps.check-ssh.outputs.available == 'false'
+        run: echo "SSH_PRIVATE_KEY not set — deployment skipped"
 
       - name: Deploy to web2
         uses: appleboy/ssh-action@v1
