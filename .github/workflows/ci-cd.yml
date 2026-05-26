@@ -48,7 +48,7 @@ jobs:
           java-version: 17
           distribution: temurin
           cache: maven
-      - run: mvn sonar:sonar -Dsonar.token=${{ secrets.SONAR_TOKEN_1 }}
+      - run: mvn verify sonar:sonar -Dsonar.token=${{ secrets.SONAR_TOKEN_1 }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
